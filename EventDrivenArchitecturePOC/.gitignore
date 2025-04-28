@@ -1,0 +1,65 @@
+## Ignore build results
+bin/
+obj/
+out/
+
+## Ignore Rider / VSCode / VS for Mac / VS IDE stuff
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Ignore ASP.NET Core secrets
+secrets.json
+
+## Ignore publish outputs
+publish/
+**/wwwroot/**/node_modules/
+
+## Ignore Docker artifacts (if you're using Docker locally)
+**/*.db
+docker-compose.override.yml
+
+## Ignore logs
+*.log
+
+## Ignore environment files
+.env
+*.env
+
+## Ignore local database
+*.db
+*.mdf
+*.ldf
+
+## Ignore migrations snapshot (optional)
+**/Migrations/*Snapshot.cs
+
+## Ignore global.json (optional - if specific to local dev setup)
+global.json
+
+## Ignore test results
+TestResults/
+*.trx
+*.coverage
+coverage/
+
+## Ignore ReSharper files
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+## Ignore NuGet packages
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+*.nuspec
+
+## Ignore compiled views
+**/obj/**/Razor/
+
+# Optional: ignore user-specific appsettings
+appsettings.Development.json
