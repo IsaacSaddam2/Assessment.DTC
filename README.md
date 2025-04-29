@@ -14,7 +14,7 @@ It consists of:
 
 ```mermaid
 flowchart LR
-    EventPublisherAPI --|Publishes UserRegisteredEvent|--> RabbitMQ
+    EventPublisherAPI --|Publishes UserRegisteredEvent|----> RabbitMQ
     RabbitMQ -->|Consumes| UserRegistrationService
     UserRegistrationBackgroundService --|Publishes NotificationEvent|--> NotificationService
 ```
@@ -33,9 +33,9 @@ flowchart LR
 
 ## Basic Flow (Completed)
 
-- `EventPublisherAPI` publishes a `UserRegisteredEvent` to **RabbitMQ**.
+- `EventPublisherAPI` publishes a `UserRegisteredEvent` to **RabbitMQ** 
 - `UserRegistrationService` listens to the **UserRegisteredEvent** queue.
-- After successful processing, it publishes a **NotificationEvent** to a different RabbitMQ exchange.
+- After successful processing, it publishes a **NotificationEvent** to a different RabbitMQ queue.
 - `NotificationService` consumes **NotificationEvent** and sends the actual notification.
 
 ---
@@ -69,9 +69,9 @@ docker run -d --hostname rabbitmq --name rabbitmq -p 5672:5672 -p 15672:15672 ra
 
 - ASP.NET Core Web API
 - .NET Core Worker Service
-- RabbitMQ
+- RabbitMQ (spinned up in docker)
 - MassTransit (optional for abstraction)
-- Polly (planned for retry policies)
+- Polly (for retry policies)
 
 ---
 
@@ -80,7 +80,6 @@ docker run -d --hostname rabbitmq --name rabbitmq -p 5672:5672 -p 15672:15672 ra
 | Feature | Description |
 |:---|:---|
 | **Dead Letter Queue (DLQ)** | Configure DLQ in RabbitMQ for failed events that cannot be processed after max retries. |
-| **Retry Mechanism** | Implement retry logic using `Polly` or built-in RabbitMQ retries with exponential backoff. |
 | **Failure Alerting** | Send an alert (email, Slack, Teams) when a message consistently fails and moves to DLQ. |
 
 ---
