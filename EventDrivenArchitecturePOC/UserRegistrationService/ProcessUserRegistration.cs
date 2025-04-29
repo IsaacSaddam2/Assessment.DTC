@@ -1,6 +1,7 @@
 using Azure.Core;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Polly;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using SharedEventModels;
@@ -14,6 +15,7 @@ namespace UserRegistrationService
         private readonly ConnectionFactory factory;
         private IConnection connection;
         private IChannel channel;
+        private Polly.Retry.AsyncRetryPolicy policy;
 
         public ProcessUserRegistration(IOptions<RabbitMqSettings> settings, ILogger<ProcessUserRegistration> logger)
         {
@@ -31,9 +33,8 @@ namespace UserRegistrationService
             {
                 if (_logger.IsEnabled(LogLevel.Information))
                 {
-                    _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
 
-                    await IntializeRabbitMq();
+                    await IntializeRabbitMqWithRetryPolicy();
 
                     var consumer = new AsyncEventingBasicConsumer(channel);
 
@@ -47,16 +48,20 @@ namespace UserRegistrationService
 
                         try
                         {
-                            await channel.BasicPublishAsync(
-                                exchange: string.Empty,
-                                routingKey: this.settings.NotificationQueue,
-                                mandatory: true,
-                                basicProperties: new BasicProperties
-                                {
-                                    ContentType = ContentType.ApplicationJson.ToString(),
-                                    Persistent = true
-                                },
-                                body: body);
+                            await policy.ExecuteAsync(async () =>
+                            {
+                                await channel.BasicPublishAsync(
+                                    exchange: string.Empty,
+                                    routingKey: this.settings.NotificationQueue,
+                                    mandatory: true,
+                                    basicProperties: new BasicProperties
+                                    {
+                                        ContentType = ContentType.ApplicationJson.ToString(),
+                                        Persistent = true
+                                    },
+                                    body: body);
+                            });
+
 
                         }
                         catch (Exception ex)
@@ -78,7 +83,7 @@ namespace UserRegistrationService
             await channel.DisposeAsync();
             await connection.DisposeAsync();
         }
-        private async Task IntializeRabbitMq()
+        private async Task IntializeRabbitMqWithRetryPolicy()
         {
             connection = await factory.CreateConnectionAsync();
             channel = await connection.CreateChannelAsync();
@@ -97,6 +102,17 @@ namespace UserRegistrationService
                 exclusive: false,
                 autoDelete: false,
                 arguments: null);
+
+            policy = Policy
+               .Handle<Exception>() // Retry on any exception during publish
+               .WaitAndRetryAsync(
+                   retryCount: 3,
+                   sleepDurationProvider: attempt => TimeSpan.FromSeconds(Math.Pow(2, attempt)), // Exponential backoff
+                   onRetry: (exception, timespan, retryCount, context) =>
+                   {
+                       Console.WriteLine($"Retry {retryCount} after {timespan.TotalSeconds}s due to {exception.Message}");
+                   });
+
         }
     }
 }
