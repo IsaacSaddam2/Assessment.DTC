@@ -12,7 +12,7 @@ namespace EventPublisherApi.Controllers
     // EventDriven.API/Controllers/UsersController.cs
     [ApiController]
     [Route("api/users")]
-    public class UsersController : ControllerBase, IAsyncDisposable
+    public class UsersController : ControllerBase
     {
         private readonly ILogger<UsersController> _logger;
         private readonly ConnectionFactory factory;
@@ -30,28 +30,6 @@ namespace EventPublisherApi.Controllers
                 Uri = new Uri(this.settings.ConnectionUrl),
             };
             _logger = logger;
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            try
-            {
-                if (channel != null)
-                {
-                    await channel.CloseAsync();
-                    await channel.DisposeAsync();
-                }
-
-                if (connection != null)
-                {
-                    await connection.CloseAsync();
-                    await connection.DisposeAsync();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while disposing resources in ProcessUserRegistration.");
-            }
         }
 
         [HttpPost]
