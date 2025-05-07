@@ -12,15 +12,16 @@ namespace EventPublisherApi.Controllers
     // EventDriven.API/Controllers/UsersController.cs
     [ApiController]
     [Route("api/users")]
-    public class UsersController : ControllerBase
+    public class UsersController : ControllerBase, IAsyncDisposable
     {
+        private readonly ILogger<UsersController> _logger;
         private readonly ConnectionFactory factory;
         private readonly RabbitMqSettings settings;
         private IConnection connection;
         private IChannel channel;
         private AsyncRetryPolicy policy;
 
-        public UsersController(IOptions<RabbitMqSettings> settings)
+        public UsersController(IOptions<RabbitMqSettings> settings, ILogger<UsersController> logger)
         {
             this.settings = settings.Value;
 
@@ -28,9 +29,32 @@ namespace EventPublisherApi.Controllers
             {
                 Uri = new Uri(this.settings.ConnectionUrl),
             };
+            _logger = logger;
         }
 
-    [HttpPost]
+        public async ValueTask DisposeAsync()
+        {
+            try
+            {
+                if (channel != null)
+                {
+                    await channel.CloseAsync();
+                    await channel.DisposeAsync();
+                }
+
+                if (connection != null)
+                {
+                    await connection.CloseAsync();
+                    await connection.DisposeAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while disposing resources in ProcessUserRegistration.");
+            }
+        }
+
+        [HttpPost]
     public async Task<IActionResult> RegisterUser([FromBody] UserRegistrationDto dto)
         {
             await InitializeRabbitMqWithRetryPolicy();

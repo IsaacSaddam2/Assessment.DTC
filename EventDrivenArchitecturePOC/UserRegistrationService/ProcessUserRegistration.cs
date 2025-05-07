@@ -80,9 +80,26 @@ namespace UserRegistrationService
 
         public async ValueTask DisposeAsync()
         {
-            await channel.DisposeAsync();
-            await connection.DisposeAsync();
+            try
+            {
+                if (channel != null)
+                {
+                    await channel.CloseAsync();
+                    await channel.DisposeAsync();
+                }
+
+                if (connection != null)
+                {
+                    await connection.CloseAsync();
+                    await connection.DisposeAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while disposing resources in ProcessUserRegistration.");
+            }
         }
+
         private async Task IntializeRabbitMqWithRetryPolicy()
         {
             connection = await factory.CreateConnectionAsync();
